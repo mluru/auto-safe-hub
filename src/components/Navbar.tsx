@@ -1,11 +1,13 @@
 
 import { Button } from '@/components/ui/button';
-import { Car, LogOut, User } from 'lucide-react';
+import { Car, LogOut, User, Shield } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 
 export const Navbar = () => {
   const { user, signOut } = useAuth();
+  const { data: role } = useUserRole();
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
@@ -58,12 +60,28 @@ export const Navbar = () => {
             >
               Payments
             </Link>
+            {role === 'admin' && (
+              <Link
+                to="/admin"
+                className={`text-sm font-medium transition-colors hover:text-primary flex items-center gap-1 ${
+                  isActive('/admin') ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <Shield className="h-4 w-4" />
+                Admin
+              </Link>
+            )}
           </nav>
 
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2 text-sm">
               <User className="h-4 w-4" />
               <span>{user.email}</span>
+              {role === 'admin' && (
+                <span className="bg-primary text-primary-foreground px-2 py-1 text-xs rounded">
+                  Admin
+                </span>
+              )}
             </div>
             <Button variant="outline" size="sm" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-2" />

@@ -149,49 +149,129 @@ export type Database = {
       }
       policies: {
         Row: {
+          chassis_number: string | null
           created_at: string | null
+          energy_type: string | null
+          engine_model: string | null
+          engine_number: string | null
           expiry_date: string
           id: string
+          owner_address: string | null
+          owner_email: string | null
+          owner_name: string | null
+          owner_phone: string | null
           policy_number: string
+          policy_type: string | null
+          policy_type_id: string | null
           premium: number
+          seating_capacity: number | null
           start_date: string
           status: string | null
+          tonnage: number | null
           updated_at: string | null
           user_id: string
+          vehicle_category: string | null
           vehicle_make: string
           vehicle_model: string
           vehicle_reg_number: string
           vehicle_year: number
         }
         Insert: {
+          chassis_number?: string | null
           created_at?: string | null
+          energy_type?: string | null
+          engine_model?: string | null
+          engine_number?: string | null
           expiry_date: string
           id?: string
+          owner_address?: string | null
+          owner_email?: string | null
+          owner_name?: string | null
+          owner_phone?: string | null
           policy_number: string
+          policy_type?: string | null
+          policy_type_id?: string | null
           premium: number
+          seating_capacity?: number | null
           start_date: string
           status?: string | null
+          tonnage?: number | null
           updated_at?: string | null
           user_id: string
+          vehicle_category?: string | null
           vehicle_make: string
           vehicle_model: string
           vehicle_reg_number: string
           vehicle_year: number
         }
         Update: {
+          chassis_number?: string | null
           created_at?: string | null
+          energy_type?: string | null
+          engine_model?: string | null
+          engine_number?: string | null
           expiry_date?: string
           id?: string
+          owner_address?: string | null
+          owner_email?: string | null
+          owner_name?: string | null
+          owner_phone?: string | null
           policy_number?: string
+          policy_type?: string | null
+          policy_type_id?: string | null
           premium?: number
+          seating_capacity?: number | null
           start_date?: string
           status?: string | null
+          tonnage?: number | null
           updated_at?: string | null
           user_id?: string
+          vehicle_category?: string | null
           vehicle_make?: string
           vehicle_model?: string
           vehicle_reg_number?: string
           vehicle_year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "policies_policy_type_id_fkey"
+            columns: ["policy_type_id"]
+            isOneToOne: false
+            referencedRelation: "policy_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      policy_types: {
+        Row: {
+          active: boolean | null
+          base_premium: number | null
+          coverage_details: Json | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          base_premium?: number | null
+          coverage_details?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          base_premium?: number | null
+          coverage_details?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
