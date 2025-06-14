@@ -6,40 +6,23 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Upload, FileText, Car, ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { FileText, ArrowLeft } from "lucide-react";
+import { useClaims, useCreateClaim } from "@/hooks/useClaims";
+import { usePolicies } from "@/hooks/usePolicies";
+import { Navbar } from "@/components/Navbar";
+import { toast } from "sonner";
 
 const Claims = () => {
   const [activeTab, setActiveTab] = useState("list");
   const [formData, setFormData] = useState({
     policyId: "",
     accidentDate: "",
-    description: "",
-    policeReportNumber: ""
+    description: ""
   });
 
-  const claims = [
-    {
-      id: "CLM-001",
-      policyNumber: "MI-2024-001234",
-      vehicle: "Toyota Camry 2022",
-      description: "Minor fender bender",
-      status: "under_review",
-      submittedDate: "2024-06-01",
-      estimatedAmount: 2500,
-      accidentDate: "2024-05-28"
-    },
-    {
-      id: "CLM-002",
-      policyNumber: "MI-2024-005678",
-      vehicle: "Honda Civic 2021",
-      description: "Windshield replacement",
-      status: "approved",
-      submittedDate: "2024-05-15",
-      estimatedAmount: 450,
-      accidentDate: "2024-05-10"
-    }
-  ];
+  const { data: claims, isLoading: claimsLoading } = useClaims();
+  const { data: policies } = usePolicies();
+  const createClaimMutation = useCreateClaim();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -57,44 +40,47 @@ const Claims = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Submitting claim:", formData);
-    // This will be connected to Supabase later
+    
+    createClaimMutation.mutate({
+      policy_id: formData.policyId,
+      accident_date: formData.accidentDate,
+      description: formData.description,
+    }, {
+      onSuccess: () => {
+        toast.success("Claim submitted successfully!");
+        setActiveTab("list");
+        setFormData({ policyId: "", accidentDate: "", description: "" });
+      },
+      onError: (error: any) => {
+        toast.error(error.message || "Failed to submit claim");
+      }
+    });
   };
 
   if (activeTab === "new") {
     return (
       <div className="min-h-screen bg-background">
-        {/* Header */}
-        <header className="border-b bg-white shadow-sm">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center space-x-4">
+        <Navbar />
+
+        <main className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            <div className="mb-6">
               <Button variant="ghost" onClick={() => setActiveTab("list")}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Claims
               </Button>
-              <div className="flex items-center space-x-2">
-                <Car className="h-8 w-8 text-primary" />
-                <h1 className="text-2xl font-bold text-primary">SecureMotor</h1>
-              </div>
             </div>
-          </div>
-        </header>
 
-        <main className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto">
             <Card>
               <CardHeader>
                 <CardTitle>File New Claim</CardTitle>
                 <CardDescription>
-                  Submit a new motor insurance claim. Please provide all required information and documentation.
+                  Submit a new motor insurance claim. Please provide all required information.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Basic Information */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Basic Information</h3>
-                    
                     <div>
                       <Label htmlFor="policy">Select Policy</Label>
                       <select 
@@ -105,8 +91,11 @@ const Claims = () => {
                         required
                       >
                         <option value="">Select a policy</option>
-                        <option value="POL-001">MI-2024-001234 - Toyota Camry 2022</option>
-                        <option value="POL-002">MI-2024-005678 - Honda Civic 2021</option>
+                        {policies?.map((policy) => (
+                          <option key={policy.id} value={policy.id}>
+                            {policy.policy_number} - {policy.vehicle_make} {policy.vehicle_model} {policy.vehicle_year}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -132,155 +121,15 @@ const Claims = () => {
                         rows={4}
                       />
                     </div>
-
-                    <div>
-                      <Label htmlFor="policeReport">Police Report Number (if applicable)</Label>
-                      <Input
-                        id="policeReport"
-                        placeholder="Enter police report number"
-                        value={formData.policeReportNumber}
-                        onChange={(e) => handleInputChange("policeReportNumber", e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  {/* File Uploads */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Required Documents</h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Card className="p-4">
-                        <div className="text-center">
-                          <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                          <Label className="block text-sm font-medium mb-2">Police Report</Label>
-                          <input
-                            type="file"
-                            accept=".pdf,.jpg,.jpeg,.png"
-                            className="hidden"
-                            id="policeReportFile"
-                          />
-                          <label htmlFor="policeReportFile" className="cursor-pointer">
-                            <Button type="button" variant="outline" size="sm">
-                              Upload File
-                            </Button>
-                          </label>
-                          <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG only</p>
-                        </div>
-                      </Card>
-
-                      <Card className="p-4">
-                        <div className="text-center">
-                          <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                          <Label className="block text-sm font-medium mb-2">Repair Quotations</Label>
-                          <input
-                            type="file"
-                            multiple
-                            accept=".pdf,.jpg,.jpeg,.png"
-                            className="hidden"
-                            id="quotationsFile"
-                          />
-                          <label htmlFor="quotationsFile" className="cursor-pointer">
-                            <Button type="button" variant="outline" size="sm">
-                              Upload Files
-                            </Button>
-                          </label>
-                          <p className="text-xs text-muted-foreground mt-1">Multiple files allowed</p>
-                        </div>
-                      </Card>
-
-                      <Card className="p-4">
-                        <div className="text-center">
-                          <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                          <Label className="block text-sm font-medium mb-2">ID Card</Label>
-                          <input
-                            type="file"
-                            accept=".pdf,.jpg,.jpeg,.png"
-                            className="hidden"
-                            id="idCardFile"
-                          />
-                          <label htmlFor="idCardFile" className="cursor-pointer">
-                            <Button type="button" variant="outline" size="sm">
-                              Upload File
-                            </Button>
-                          </label>
-                          <p className="text-xs text-muted-foreground mt-1">Vehicle owner's ID</p>
-                        </div>
-                      </Card>
-
-                      <Card className="p-4">
-                        <div className="text-center">
-                          <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                          <Label className="block text-sm font-medium mb-2">Driver's License</Label>
-                          <input
-                            type="file"
-                            accept=".pdf,.jpg,.jpeg,.png"
-                            className="hidden"
-                            id="licenseFile"
-                          />
-                          <label htmlFor="licenseFile" className="cursor-pointer">
-                            <Button type="button" variant="outline" size="sm">
-                              Upload File
-                            </Button>
-                          </label>
-                          <p className="text-xs text-muted-foreground mt-1">Driver's license copy</p>
-                        </div>
-                      </Card>
-                    </div>
-                  </div>
-
-                  {/* Vehicle Photos */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Vehicle Photos</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Please upload photos of your vehicle showing the damage and all four sides of the vehicle.
-                    </p>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {["Front", "Back", "Left Side", "Right Side"].map((side) => (
-                        <Card key={side} className="p-4">
-                          <div className="text-center">
-                            <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-                            <Label className="block text-xs font-medium mb-2">{side}</Label>
-                            <input
-                              type="file"
-                              accept=".jpg,.jpeg,.png"
-                              className="hidden"
-                              id={`vehicle${side.replace(" ", "")}File`}
-                            />
-                            <label htmlFor={`vehicle${side.replace(" ", "")}File`} className="cursor-pointer">
-                              <Button type="button" variant="outline" size="sm">
-                                Upload
-                              </Button>
-                            </label>
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-
-                    <Card className="p-4">
-                      <div className="text-center">
-                        <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                        <Label className="block text-sm font-medium mb-2">Damage Photos</Label>
-                        <input
-                          type="file"
-                          multiple
-                          accept=".jpg,.jpeg,.png"
-                          className="hidden"
-                          id="damagePhotosFile"
-                        />
-                        <label htmlFor="damagePhotosFile" className="cursor-pointer">
-                          <Button type="button" variant="outline">
-                            Upload Multiple Photos
-                          </Button>
-                        </label>
-                        <p className="text-xs text-muted-foreground mt-1">Upload all damage photos</p>
-                      </div>
-                    </Card>
                   </div>
 
                   <div className="flex gap-4">
-                    <Button type="submit" className="flex-1">
-                      Submit Claim
+                    <Button 
+                      type="submit" 
+                      className="flex-1"
+                      disabled={createClaimMutation.isPending}
+                    >
+                      {createClaimMutation.isPending ? "Submitting..." : "Submit Claim"}
                     </Button>
                     <Button type="button" variant="outline" onClick={() => setActiveTab("list")}>
                       Cancel
@@ -297,31 +146,18 @@ const Claims = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link to="/" className="flex items-center space-x-2">
-                <Car className="h-8 w-8 text-primary" />
-                <h1 className="text-2xl font-bold text-primary">SecureMotor</h1>
-              </Link>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <Button onClick={() => setActiveTab("new")}>
-                <FileText className="h-4 w-4 mr-2" />
-                File New Claim
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-foreground mb-2">Claims Management</h2>
-          <p className="text-muted-foreground">Track and manage your insurance claims.</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">Claims Management</h2>
+            <p className="text-muted-foreground">Track and manage your insurance claims.</p>
+          </div>
+          <Button onClick={() => setActiveTab("new")}>
+            <FileText className="h-4 w-4 mr-2" />
+            File New Claim
+          </Button>
         </div>
 
         <Card>
@@ -330,53 +166,64 @@ const Claims = () => {
             <CardDescription>All submitted claims and their current status</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {claims.map((claim) => (
-                <Card key={claim.id} className="border">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="font-medium text-lg">{claim.description}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Claim ID: {claim.id} • Policy: {claim.policyNumber}
-                        </p>
+            {claimsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : claims?.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No claims found. File your first claim to get started.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {claims?.map((claim) => (
+                  <Card key={claim.id} className="border">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="font-medium text-lg">{claim.description}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Claim ID: {claim.claim_number} • Policy: {claim.policies?.policy_number}
+                          </p>
+                        </div>
+                        <Badge className={getStatusColor(claim.status)}>
+                          {claim.status.replace("_", " ")}
+                        </Badge>
                       </div>
-                      <Badge className={getStatusColor(claim.status)}>
-                        {claim.status.replace("_", " ")}
-                      </Badge>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Vehicle:</span>
-                        <p className="font-medium">{claim.vehicle}</p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Vehicle:</span>
+                          <p className="font-medium">
+                            {claim.policies?.vehicle_make} {claim.policies?.vehicle_model} {claim.policies?.vehicle_year}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Accident Date:</span>
+                          <p className="font-medium">{new Date(claim.accident_date).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Submitted:</span>
+                          <p className="font-medium">{new Date(claim.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Estimated Amount:</span>
+                          <p className="font-medium">
+                            {claim.estimated_amount ? `$${claim.estimated_amount}` : 'Pending'}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">Accident Date:</span>
-                        <p className="font-medium">{claim.accidentDate}</p>
+                      
+                      <div className="mt-4 flex gap-2">
+                        <Button variant="outline" size="sm">
+                          View Details
+                        </Button>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">Submitted:</span>
-                        <p className="font-medium">{claim.submittedDate}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Estimated Amount:</span>
-                        <p className="font-medium">${claim.estimatedAmount}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 flex gap-2">
-                      <Button variant="outline" size="sm">
-                        View Details
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        Upload Additional Files
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>

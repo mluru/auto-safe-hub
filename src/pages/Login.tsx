@@ -5,15 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Car, Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const Login = () => {
+  const { signIn, user, loading } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: ""
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!loading && user) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -21,21 +28,26 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsSubmitting(true);
     
-    // This will be connected to Supabase authentication
-    console.log("Login attempt:", formData);
+    const { error } = await signIn(formData.email, formData.password);
     
-    setTimeout(() => {
-      setIsLoading(false);
-      // Redirect to dashboard on successful login
-    }, 2000);
+    if (error) {
+      toast.error(error.message || "Failed to sign in");
+    } else {
+      toast.success("Welcome back!");
+    }
+    
+    setIsSubmitting(false);
   };
 
-  const handleForgotPassword = () => {
-    // This will trigger Supabase password reset
-    console.log("Password reset requested for:", formData.email);
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -98,26 +110,12 @@ const Login = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <label className="flex items-center space-x-2 text-sm">
-                  <input type="checkbox" className="rounded border-gray-300" />
-                  <span>Remember me</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={handleForgotPassword}
-                  className="text-sm text-primary hover:underline"
-                >
-                  Forgot password?
-                </button>
-              </div>
-
               <Button 
                 type="submit" 
                 className="w-full" 
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
-                {isLoading ? "Signing in..." : "Sign In"}
+                {isSubmitting ? "Signing in..." : "Sign In"}
               </Button>
             </form>
 
@@ -129,29 +127,8 @@ const Login = () => {
                 </Link>
               </p>
             </div>
-
-            {/* Demo Credentials */}
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <h4 className="text-sm font-medium text-blue-900 mb-2">Demo Credentials</h4>
-              <div className="text-xs text-blue-800 space-y-1">
-                <p><strong>User:</strong> user@demo.com / password123</p>
-                <p><strong>Admin:</strong> admin@demo.com / admin123</p>
-              </div>
-            </div>
           </CardContent>
         </Card>
-
-        {/* Additional Links */}
-        <div className="mt-6 text-center space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Need help? <a href="#" className="text-primary hover:underline">Contact Support</a>
-          </p>
-          <p className="text-xs text-muted-foreground">
-            By signing in, you agree to our{" "}
-            <a href="#" className="text-primary hover:underline">Terms of Service</a> and{" "}
-            <a href="#" className="text-primary hover:underline">Privacy Policy</a>
-          </p>
-        </div>
       </div>
     </div>
   );
