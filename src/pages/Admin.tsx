@@ -42,7 +42,7 @@ const Admin = () => {
 
   const handleUpdatePolicy = async (data: any) => {
     try {
-      await updatePolicyMutation.mutateAsync({ id: editingPolicy.i…, ...data });
+      await updatePolicyMutation.mutateAsync({ id: editingPolicy.id, ...data });
       toast({ title: 'Success', description: 'Policy updated successfully' });
       setEditingPolicy(null);
       setShowPolicyForm(false);
