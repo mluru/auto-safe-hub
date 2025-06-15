@@ -14,13 +14,14 @@ interface PolicyFormProps {
   onSubmit: (data: any) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  prefilledUserId?: string;
 }
 
-export const PolicyForm = ({ policy, onSubmit, onCancel, isLoading }: PolicyFormProps) => {
+export const PolicyForm = ({ policy, onSubmit, onCancel, isLoading, prefilledUserId }: PolicyFormProps) => {
   const { data: policyTypes } = usePolicyTypes();
   const [users, setUsers] = useState<any[]>([]);
   const [formData, setFormData] = useState({
-    user_id: '',
+    user_id: prefilledUserId || '',
     policy_type_id: '',
     vehicle_make: '',
     vehicle_model: '',
@@ -83,8 +84,10 @@ export const PolicyForm = ({ policy, onSubmit, onCancel, isLoading }: PolicyForm
         expiry_date: policy.expiry_date || '',
         status: policy.status || 'active',
       });
+    } else if (prefilledUserId) {
+      setFormData(prev => ({ ...prev, user_id: prefilledUserId }));
     }
-  }, [policy]);
+  }, [policy, prefilledUserId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,22 +114,24 @@ export const PolicyForm = ({ policy, onSubmit, onCancel, isLoading }: PolicyForm
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* User Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="user_id">Policy Holder</Label>
-            <Select value={formData.user_id} onValueChange={(value) => handleChange('user_id', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select policy holder" />
-              </SelectTrigger>
-              <SelectContent>
-                {users.map(user => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* User Selection - only show if not prefilled */}
+          {!prefilledUserId && (
+            <div className="space-y-2">
+              <Label htmlFor="user_id">Policy Holder</Label>
+              <Select value={formData.user_id} onValueChange={(value) => handleChange('user_id', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select policy holder" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map(user => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.full_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Policy Type Selection */}
           <div className="space-y-2">
@@ -146,118 +151,121 @@ export const PolicyForm = ({ policy, onSubmit, onCancel, isLoading }: PolicyForm
           </div>
 
           {/* Vehicle Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="vehicle_make">Vehicle Make</Label>
-              <Input
-                id="vehicle_make"
-                value={formData.vehicle_make}
-                onChange={(e) => handleChange('vehicle_make', e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="vehicle_model">Vehicle Model</Label>
-              <Input
-                id="vehicle_model"
-                value={formData.vehicle_model}
-                onChange={(e) => handleChange('vehicle_model', e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="vehicle_year">Vehicle Year</Label>
-              <Input
-                id="vehicle_year"
-                type="number"
-                value={formData.vehicle_year}
-                onChange={(e) => handleChange('vehicle_year', e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="vehicle_reg_number">Registration Number</Label>
-              <Input
-                id="vehicle_reg_number"
-                value={formData.vehicle_reg_number}
-                onChange={(e) => handleChange('vehicle_reg_number', e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="chassis_number">Chassis Number</Label>
-              <Input
-                id="chassis_number"
-                value={formData.chassis_number}
-                onChange={(e) => handleChange('chassis_number', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="engine_number">Engine Number</Label>
-              <Input
-                id="engine_number"
-                value={formData.engine_number}
-                onChange={(e) => handleChange('engine_number', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="engine_model">Engine Model</Label>
-              <Input
-                id="engine_model"
-                value={formData.engine_model}
-                onChange={(e) => handleChange('engine_model', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="seating_capacity">Seating Capacity</Label>
-              <Input
-                id="seating_capacity"
-                type="number"
-                value={formData.seating_capacity}
-                onChange={(e) => handleChange('seating_capacity', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tonnage">Tonnage</Label>
-              <Input
-                id="tonnage"
-                type="number"
-                step="0.01"
-                value={formData.tonnage}
-                onChange={(e) => handleChange('tonnage', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="energy_type">Energy Type</Label>
-              <Select value={formData.energy_type} onValueChange={(value) => handleChange('energy_type', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select energy type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="petrol">Petrol</SelectItem>
-                  <SelectItem value="diesel">Diesel</SelectItem>
-                  <SelectItem value="electric">Electric</SelectItem>
-                  <SelectItem value="hybrid">Hybrid</SelectItem>
-                  <SelectItem value="cng">CNG</SelectItem>
-                  <SelectItem value="lpg">LPG</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="vehicle_category">Vehicle Category</Label>
-              <Select value={formData.vehicle_category} onValueChange={(value) => handleChange('vehicle_category', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="private_car">Private Car</SelectItem>
-                  <SelectItem value="commercial">Commercial</SelectItem>
-                  <SelectItem value="motorcycle">Motorcycle</SelectItem>
-                  <SelectItem value="truck">Truck</SelectItem>
-                  <SelectItem value="bus">Bus</SelectItem>
-                  <SelectItem value="taxi">Taxi</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Vehicle Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="vehicle_make">Vehicle Make</Label>
+                <Input
+                  id="vehicle_make"
+                  value={formData.vehicle_make}
+                  onChange={(e) => handleChange('vehicle_make', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="vehicle_model">Vehicle Model</Label>
+                <Input
+                  id="vehicle_model"
+                  value={formData.vehicle_model}
+                  onChange={(e) => handleChange('vehicle_model', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="vehicle_year">Vehicle Year</Label>
+                <Input
+                  id="vehicle_year"
+                  type="number"
+                  value={formData.vehicle_year}
+                  onChange={(e) => handleChange('vehicle_year', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="vehicle_reg_number">Registration Number</Label>
+                <Input
+                  id="vehicle_reg_number"
+                  value={formData.vehicle_reg_number}
+                  onChange={(e) => handleChange('vehicle_reg_number', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="chassis_number">Chassis Number</Label>
+                <Input
+                  id="chassis_number"
+                  value={formData.chassis_number}
+                  onChange={(e) => handleChange('chassis_number', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="engine_number">Engine Number</Label>
+                <Input
+                  id="engine_number"
+                  value={formData.engine_number}
+                  onChange={(e) => handleChange('engine_number', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="engine_model">Engine Model</Label>
+                <Input
+                  id="engine_model"
+                  value={formData.engine_model}
+                  onChange={(e) => handleChange('engine_model', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="seating_capacity">Seating Capacity</Label>
+                <Input
+                  id="seating_capacity"
+                  type="number"
+                  value={formData.seating_capacity}
+                  onChange={(e) => handleChange('seating_capacity', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tonnage">Tonnage</Label>
+                <Input
+                  id="tonnage"
+                  type="number"
+                  step="0.01"
+                  value={formData.tonnage}
+                  onChange={(e) => handleChange('tonnage', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="energy_type">Energy Type</Label>
+                <Select value={formData.energy_type} onValueChange={(value) => handleChange('energy_type', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select energy type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="petrol">Petrol</SelectItem>
+                    <SelectItem value="diesel">Diesel</SelectItem>
+                    <SelectItem value="electric">Electric</SelectItem>
+                    <SelectItem value="hybrid">Hybrid</SelectItem>
+                    <SelectItem value="cng">CNG</SelectItem>
+                    <SelectItem value="lpg">LPG</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="vehicle_category">Vehicle Category</Label>
+                <Select value={formData.vehicle_category} onValueChange={(value) => handleChange('vehicle_category', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="private_car">Private Car</SelectItem>
+                    <SelectItem value="commercial">Commercial</SelectItem>
+                    <SelectItem value="motorcycle">Motorcycle</SelectItem>
+                    <SelectItem value="truck">Truck</SelectItem>
+                    <SelectItem value="bus">Bus</SelectItem>
+                    <SelectItem value="taxi">Taxi</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
@@ -302,50 +310,53 @@ export const PolicyForm = ({ policy, onSubmit, onCancel, isLoading }: PolicyForm
           </div>
 
           {/* Policy Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="premium">Premium Amount</Label>
-              <Input
-                id="premium"
-                type="number"
-                step="0.01"
-                value={formData.premium}
-                onChange={(e) => handleChange('premium', e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value) => handleChange('status', value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="expired">Expired</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="start_date">Start Date</Label>
-              <Input
-                id="start_date"
-                type="date"
-                value={formData.start_date}
-                onChange={(e) => handleChange('start_date', e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="expiry_date">Expiry Date</Label>
-              <Input
-                id="expiry_date"
-                type="date"
-                value={formData.expiry_date}
-                onChange={(e) => handleChange('expiry_date', e.target.value)}
-                required
-              />
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Policy Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="premium">Premium Amount</Label>
+                <Input
+                  id="premium"
+                  type="number"
+                  step="0.01"
+                  value={formData.premium}
+                  onChange={(e) => handleChange('premium', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select value={formData.status} onValueChange={(value) => handleChange('status', value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="expired">Expired</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="start_date">Start Date</Label>
+                <Input
+                  id="start_date"
+                  type="date"
+                  value={formData.start_date}
+                  onChange={(e) => handleChange('start_date', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="expiry_date">Expiry Date</Label>
+                <Input
+                  id="expiry_date"
+                  type="date"
+                  value={formData.expiry_date}
+                  onChange={(e) => handleChange('expiry_date', e.target.value)}
+                  required
+                />
+              </div>
             </div>
           </div>
 
