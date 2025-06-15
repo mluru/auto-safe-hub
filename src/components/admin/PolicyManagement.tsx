@@ -6,45 +6,53 @@ import { Badge } from '@/components/ui/badge';
 import { PolicyForm } from './PolicyForm';
 import { useAdminPolicies, useCreateAdminPolicy, useUpdateAdminPolicy, useDeleteAdminPolicy } from '@/hooks/useAdminPolicies';
 import { useToast } from '@/hooks/use-toast';
-import { Edit, Trash2, Plus } from 'lucide-react';
+import { Edit, Trash2, Plus, ArrowLeft } from 'lucide-react';
 
 export const PolicyManagement = () => {
   const { toast } = useToast();
   const [showPolicyForm, setShowPolicyForm] = useState(false);
   const [editingPolicy, setEditingPolicy] = useState(null);
 
-  const { data: policies, isLoading: policiesLoading } = useAdminPolicies();
+  const { data: policies, isLoading: policiesLoading, error: policiesError } = useAdminPolicies();
   const createPolicyMutation = useCreateAdminPolicy();
   const updatePolicyMutation = useUpdateAdminPolicy();
   const deletePolicyMutation = useDeleteAdminPolicy();
 
+  console.log('PolicyManagement - policies:', policies, 'loading:', policiesLoading, 'error:', policiesError);
+
   const handleCreatePolicy = async (data: any) => {
+    console.log('Creating policy with data:', data);
     try {
       await createPolicyMutation.mutateAsync(data);
       toast({ title: 'Success', description: 'Policy created successfully' });
       setShowPolicyForm(false);
     } catch (error) {
+      console.error('Policy creation error:', error);
       toast({ title: 'Error', description: 'Failed to create policy', variant: 'destructive' });
     }
   };
 
   const handleUpdatePolicy = async (data: any) => {
+    console.log('Updating policy with data:', data);
     try {
       await updatePolicyMutation.mutateAsync({ id: editingPolicy.id, ...data });
       toast({ title: 'Success', description: 'Policy updated successfully' });
       setEditingPolicy(null);
       setShowPolicyForm(false);
     } catch (error) {
+      console.error('Policy update error:', error);
       toast({ title: 'Error', description: 'Failed to update policy', variant: 'destructive' });
     }
   };
 
   const handleDeletePolicy = async (id: string) => {
     if (confirm('Are you sure you want to delete this policy?')) {
+      console.log('Deleting policy:', id);
       try {
         await deletePolicyMutation.mutateAsync(id);
         toast({ title: 'Success', description: 'Policy deleted successfully' });
       } catch (error) {
+        console.error('Policy deletion error:', error);
         toast({ title: 'Error', description: 'Failed to delete policy', variant: 'destructive' });
       }
     }
@@ -61,15 +69,28 @@ export const PolicyManagement = () => {
 
   if (showPolicyForm) {
     return (
-      <PolicyForm
-        policy={editingPolicy}
-        onSubmit={editingPolicy ? handleUpdatePolicy : handleCreatePolicy}
-        onCancel={() => {
-          setShowPolicyForm(false);
-          setEditingPolicy(null);
-        }}
-        isLoading={createPolicyMutation.isPending || updatePolicyMutation.isPending}
-      />
+      <div className="space-y-4">
+        <Button
+          variant="outline"
+          onClick={() => {
+            setShowPolicyForm(false);
+            setEditingPolicy(null);
+          }}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Policies
+        </Button>
+        <PolicyForm
+          policy={editingPolicy}
+          onSubmit={editingPolicy ? handleUpdatePolicy : handleCreatePolicy}
+          onCancel={() => {
+            setShowPolicyForm(false);
+            setEditingPolicy(null);
+          }}
+          isLoading={createPolicyMutation.isPending || updatePolicyMutation.isPending}
+        />
+      </div>
     );
   }
 
@@ -87,7 +108,14 @@ export const PolicyManagement = () => {
       </div>
 
       {policiesLoading ? (
-        <div className="text-center py-8">Loading policies...</div>
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading policies...</p>
+        </div>
+      ) : policiesError ? (
+        <div className="text-center py-8 text-red-600">
+          <p>Error loading policies: {policiesError.message}</p>
+        </div>
       ) : (
         <div className="grid gap-4">
           {policies?.map((policy) => (
@@ -127,6 +155,7 @@ export const PolicyManagement = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => {
+                        console.log('Editing policy:', policy);
                         setEditingPolicy(policy);
                         setShowPolicyForm(true);
                       }}

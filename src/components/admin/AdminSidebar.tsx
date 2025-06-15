@@ -19,10 +19,12 @@ export const AdminSidebar = () => {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  console.log('AdminSidebar current location:', location.pathname);
+
   const menuItems = [
     { 
       name: 'Dashboard', 
-      path: '/admin', 
+      path: '/admin/dashboard', 
       icon: LayoutDashboard,
       exact: true
     },
@@ -55,6 +57,7 @@ export const AdminSidebar = () => {
       await signOut();
       toast.success('Logged out successfully');
     } catch (error) {
+      console.error('Logout error:', error);
       toast.error('Failed to logout');
     }
   };
@@ -86,8 +89,8 @@ export const AdminSidebar = () => {
             <li key={item.path}>
               <NavLink
                 to={item.path}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive(item.path, item.exact)
+                className={({ isActive: linkActive }) => `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  linkActive
                     ? 'bg-primary text-primary-foreground'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
