@@ -12,6 +12,7 @@ import {
   Menu,
   X
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export const AdminSidebar = () => {
   const { signOut, user } = useAuth();
@@ -49,10 +50,19 @@ export const AdminSidebar = () => {
     return location.pathname.startsWith(path);
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success('Logged out successfully');
+    } catch (error) {
+      toast.error('Failed to logout');
+    }
+  };
+
   return (
     <div className={`bg-white border-r border-gray-200 transition-all duration-300 ${
       isCollapsed ? 'w-16' : 'w-64'
-    } flex flex-col h-screen`}>
+    } flex flex-col h-screen sticky top-0`}>
       {/* Header */}
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
@@ -103,7 +113,7 @@ export const AdminSidebar = () => {
         <Button
           variant="outline"
           size="sm"
-          onClick={signOut}
+          onClick={handleLogout}
           className="w-full flex items-center gap-2"
         >
           <LogOut className="h-4 w-4" />
