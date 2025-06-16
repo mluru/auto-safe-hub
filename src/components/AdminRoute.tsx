@@ -11,7 +11,7 @@ export const AdminRoute = ({ children }: AdminRouteProps) => {
   const { user, loading } = useAuth();
   const { data: role, isLoading, error } = useUserRole();
 
-  console.log('AdminRoute - user:', user, 'role:', role, 'loading:', loading, 'isLoading:', isLoading);
+  console.log('AdminRoute - user:', user?.email, 'role:', role, 'loading:', loading, 'isLoading:', isLoading);
 
   if (loading || isLoading) {
     return (
@@ -35,9 +35,10 @@ export const AdminRoute = ({ children }: AdminRouteProps) => {
   }
 
   if (role !== 'admin') {
-    console.log('User role is not admin:', role);
+    console.log('User role is not admin:', role, 'redirecting to home');
     return <Navigate to="/" replace />;
   }
 
+  console.log('Admin access granted, rendering children');
   return <>{children}</>;
 };

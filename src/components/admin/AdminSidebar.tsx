@@ -1,5 +1,4 @@
 
-import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,7 @@ import {
   X
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useState } from 'react';
 
 export const AdminSidebar = () => {
   const { signOut, user } = useAuth();
@@ -25,8 +25,7 @@ export const AdminSidebar = () => {
     { 
       name: 'Dashboard', 
       path: '/admin/dashboard', 
-      icon: LayoutDashboard,
-      exact: true
+      icon: LayoutDashboard 
     },
     { 
       name: 'Manage Policies', 
@@ -34,7 +33,7 @@ export const AdminSidebar = () => {
       icon: Car 
     },
     { 
-      name: 'Manage Policy Types', 
+      name: 'Policy Types', 
       path: '/admin/policy-types', 
       icon: FileText 
     },
@@ -44,13 +43,6 @@ export const AdminSidebar = () => {
       icon: UserPlus 
     }
   ];
-
-  const isActive = (path: string, exact: boolean = false) => {
-    if (exact) {
-      return location.pathname === path;
-    }
-    return location.pathname.startsWith(path);
-  };
 
   const handleLogout = async () => {
     try {
@@ -89,8 +81,8 @@ export const AdminSidebar = () => {
             <li key={item.path}>
               <NavLink
                 to={item.path}
-                className={({ isActive: linkActive }) => `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  linkActive
+                className={({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  isActive
                     ? 'bg-primary text-primary-foreground'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}

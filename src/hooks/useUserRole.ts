@@ -11,9 +11,9 @@ export const useUserRole = () => {
     queryFn: async () => {
       if (!user) return null;
       
-      console.log('Fetching role for user:', user.id);
+      console.log('Fetching role for user:', user.id, user.email);
       
-      // First try to get role from user_roles table
+      // Check user_roles table for role
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
@@ -25,9 +25,16 @@ export const useUserRole = () => {
         return roleData.role;
       }
 
-      // If not found in user_roles, check if user is admin based on email or other criteria
-      // For now, return 'user' as default
-      console.log('No role found, defaulting to user');
+      console.log('No role found in user_roles, checking email for admin access');
+      
+      // For testing: if email contains 'admin', grant admin access
+      // Remove this in production and use proper role assignment
+      if (user.email?.includes('admin')) {
+        console.log('Admin access granted based on email');
+        return 'admin';
+      }
+
+      console.log('No admin access, defaulting to user role');
       return 'user';
     },
     enabled: !!user,
