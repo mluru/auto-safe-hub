@@ -63,6 +63,7 @@ export type Database = {
           policy_id: string
           status: string | null
           updated_at: string | null
+          uploads: Json | null
           user_id: string
         }
         Insert: {
@@ -77,6 +78,7 @@ export type Database = {
           policy_id: string
           status?: string | null
           updated_at?: string | null
+          uploads?: Json | null
           user_id: string
         }
         Update: {
@@ -91,6 +93,7 @@ export type Database = {
           policy_id?: string
           status?: string | null
           updated_at?: string | null
+          uploads?: Json | null
           user_id?: string
         }
         Relationships: [
@@ -102,6 +105,120 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      items: {
+        Row: {
+          created_at: string
+          description: string | null
+          discounted_price: number | null
+          id: string
+          image: string | null
+          name: string
+          price: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          discounted_price?: number | null
+          id?: string
+          image?: string | null
+          name: string
+          price: number
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          discounted_price?: number | null
+          id?: string
+          image?: string | null
+          name?: string
+          price?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          order_id: string
+          rate_premium: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          order_id: string
+          rate_premium: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          order_id?: string
+          rate_premium?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          customer_id: string
+          delivery_address: string | null
+          id: string
+          order_number: string | null
+          phone_number: string | null
+          proof_of_payment: string | null
+          status: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          delivery_address?: string | null
+          id?: string
+          order_number?: string | null
+          phone_number?: string | null
+          proof_of_payment?: string | null
+          status?: string
+          total: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          delivery_address?: string | null
+          id?: string
+          order_number?: string | null
+          phone_number?: string | null
+          proof_of_payment?: string | null
+          status?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       payments: {
         Row: {
@@ -156,14 +273,19 @@ export type Database = {
           engine_number: string | null
           expiry_date: string
           id: string
+          order_id: string | null
           owner_address: string | null
           owner_email: string | null
+          owner_info: Json | null
           owner_name: string | null
           owner_phone: string | null
           policy_number: string
           policy_type: string | null
           policy_type_id: string | null
           premium: number
+          property_details: string | null
+          renewable: boolean | null
+          risk_location: string | null
           seating_capacity: number | null
           start_date: string
           status: string | null
@@ -171,6 +293,7 @@ export type Database = {
           updated_at: string | null
           user_id: string
           vehicle_category: string | null
+          vehicle_info: Json | null
           vehicle_make: string
           vehicle_model: string
           vehicle_reg_number: string
@@ -184,14 +307,19 @@ export type Database = {
           engine_number?: string | null
           expiry_date: string
           id?: string
+          order_id?: string | null
           owner_address?: string | null
           owner_email?: string | null
+          owner_info?: Json | null
           owner_name?: string | null
           owner_phone?: string | null
           policy_number: string
           policy_type?: string | null
           policy_type_id?: string | null
           premium: number
+          property_details?: string | null
+          renewable?: boolean | null
+          risk_location?: string | null
           seating_capacity?: number | null
           start_date: string
           status?: string | null
@@ -199,6 +327,7 @@ export type Database = {
           updated_at?: string | null
           user_id: string
           vehicle_category?: string | null
+          vehicle_info?: Json | null
           vehicle_make: string
           vehicle_model: string
           vehicle_reg_number: string
@@ -212,14 +341,19 @@ export type Database = {
           engine_number?: string | null
           expiry_date?: string
           id?: string
+          order_id?: string | null
           owner_address?: string | null
           owner_email?: string | null
+          owner_info?: Json | null
           owner_name?: string | null
           owner_phone?: string | null
           policy_number?: string
           policy_type?: string | null
           policy_type_id?: string | null
           premium?: number
+          property_details?: string | null
+          renewable?: boolean | null
+          risk_location?: string | null
           seating_capacity?: number | null
           start_date?: string
           status?: string | null
@@ -227,12 +361,20 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           vehicle_category?: string | null
+          vehicle_info?: Json | null
           vehicle_make?: string
           vehicle_model?: string
           vehicle_reg_number?: string
           vehicle_year?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "policies_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "policies_policy_type_id_fkey"
             columns: ["policy_type_id"]
@@ -326,6 +468,10 @@ export type Database = {
     }
     Functions: {
       generate_claim_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_order_number: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
