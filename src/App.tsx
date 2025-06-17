@@ -16,6 +16,8 @@ import Products from "./pages/Products";
 import ProductDetails from "./pages/ProductDetails";
 import Claims from "./pages/Claims";
 import Payments from "./pages/Payments";
+import Checkout from "./pages/Checkout";
+import Cart from "./pages/Cart";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
@@ -46,6 +48,16 @@ function App() {
                 <Route path="/products/:id" element={
                   <ProtectedRoute>
                     <ProductDetails />
+                  </ProtectedRoute>
+                } />
+                <Route path="/cart" element={
+                  <ProtectedRoute>
+                    <Cart />
+                  </ProtectedRoute>
+                } />
+                <Route path="/checkout" element={
+                  <ProtectedRoute>
+                    <Checkout />
                   </ProtectedRoute>
                 } />
                 <Route path="/policies" element={
