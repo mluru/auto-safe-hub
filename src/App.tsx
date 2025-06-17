@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
+import Homepage from "./pages/Homepage";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -31,7 +32,8 @@ function App() {
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
-                <Route path="/" element={
+                <Route path="/" element={<Homepage />} />
+                <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <Index />
                   </ProtectedRoute>
