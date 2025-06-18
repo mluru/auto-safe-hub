@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -12,17 +13,24 @@ import {
   CreditCard, 
   LogOut,
   Menu,
-  X
+  X,
+  Users,
+  FolderOpen
 } from 'lucide-react';
 import PolicyRequestForm from '@/components/PolicyRequestForm';
 import MyPoliciesSection from '@/components/MyPoliciesSection';
 import MyClaimsSection from '@/components/MyClaimsSection';
 import PaymentSection from '@/components/PaymentSection';
+import UserManagementSection from '@/components/admin/UserManagementSection';
+import PolicyManagementSection from '@/components/admin/PolicyManagementSection';
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
+  const { data: userRole } = useUserRole();
   const [activeSection, setActiveSection] = useState('request-policy');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const isAdmin = userRole === 'admin';
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, disabled: true },
@@ -30,6 +38,10 @@ const Dashboard = () => {
     { id: 'my-policies', label: 'My Policies', icon: BookOpen },
     { id: 'my-claims', label: 'My Claims', icon: ClipboardList },
     { id: 'payments', label: 'Payment Options', icon: CreditCard },
+    ...(isAdmin ? [
+      { id: 'user-management', label: 'User Management', icon: Users, adminOnly: true },
+      { id: 'policy-management', label: 'Policy Management', icon: FolderOpen, adminOnly: true }
+    ] : [])
   ];
 
   const renderActiveSection = () => {
@@ -42,6 +54,10 @@ const Dashboard = () => {
         return <MyClaimsSection />;
       case 'payments':
         return <PaymentSection />;
+      case 'user-management':
+        return isAdmin ? <UserManagementSection /> : <PolicyRequestForm />;
+      case 'policy-management':
+        return isAdmin ? <PolicyManagementSection /> : <PolicyRequestForm />;
       default:
         return <PolicyRequestForm />;
     }
@@ -82,7 +98,16 @@ const Dashboard = () => {
               disabled={item.disabled}
             >
               <item.icon className={`h-4 w-4 ${sidebarOpen && 'mr-3'}`} />
-              {sidebarOpen && item.label}
+              {sidebarOpen && (
+                <span className="flex items-center gap-2">
+                  {item.label}
+                  {item.adminOnly && (
+                    <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">
+                      Admin
+                    </span>
+                  )}
+                </span>
+              )}
             </Button>
           ))}
         </nav>
@@ -92,6 +117,11 @@ const Dashboard = () => {
           {sidebarOpen && user && (
             <div className="mb-3 p-2 bg-gray-50 rounded">
               <p className="text-sm font-medium">{user.email}</p>
+              {isAdmin && (
+                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded mt-1 inline-block">
+                  Administrator
+                </span>
+              )}
             </div>
           )}
           <Button
