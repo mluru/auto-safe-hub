@@ -51,7 +51,8 @@ interface PolicyWithUser {
   owner_name: string;
   owner_email: string;
   owner_phone: string;
-  profiles: {
+  user_id: string;
+  profiles?: {
     full_name: string;
   } | null;
 }
@@ -84,7 +85,8 @@ const PolicyManagementSection = () => {
           owner_name,
           owner_email,
           owner_phone,
-          profiles (
+          user_id,
+          profiles!inner (
             full_name
           )
         `)

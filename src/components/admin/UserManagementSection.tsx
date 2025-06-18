@@ -41,10 +41,9 @@ interface UserWithRole {
   full_name: string;
   phone: string | null;
   created_at: string;
-  user_roles: {
-    role: string;
-  }[];
-  // We'll get email from auth metadata if needed
+  user_roles?: {
+    role: 'user' | 'admin';
+  }[] | null;
 }
 
 const UserManagementSection = () => {
@@ -81,7 +80,7 @@ const UserManagementSection = () => {
 
   // Update user role mutation
   const updateUserRoleMutation = useMutation({
-    mutationFn: async ({ userId, newRole }: { userId: string; newRole: string }) => {
+    mutationFn: async ({ userId, newRole }: { userId: string; newRole: 'user' | 'admin' }) => {
       console.log('Updating user role:', userId, newRole);
       
       // First, delete existing role
@@ -161,7 +160,7 @@ const UserManagementSection = () => {
     user.id.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
-  const getUserRole = (user: UserWithRole) => {
+  const getUserRole = (user: UserWithRole): 'user' | 'admin' => {
     return user.user_roles?.[0]?.role || 'user';
   };
 
@@ -255,7 +254,7 @@ const UserManagementSection = () => {
                       
                       <Select
                         value={getUserRole(user)}
-                        onValueChange={(newRole) => 
+                        onValueChange={(newRole: 'user' | 'admin') => 
                           updateUserRoleMutation.mutate({ userId: user.id, newRole })
                         }
                       >
