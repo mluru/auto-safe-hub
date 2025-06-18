@@ -7,6 +7,7 @@ import { useItem } from '@/hooks/useItems';
 import { useCart } from '@/contexts/CartContext';
 import { Car, ArrowLeft, ShoppingCart } from 'lucide-react';
 import { toast } from 'sonner';
+import UniversalHeader from '@/components/UniversalHeader';
 
 const ProductDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -36,10 +37,13 @@ const ProductDetails = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Loading product details...</p>
+      <div className="min-h-screen bg-background">
+        <UniversalHeader />
+        <div className="flex items-center justify-center p-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p>Loading product details...</p>
+          </div>
         </div>
       </div>
     );
@@ -47,16 +51,19 @@ const ProductDetails = () => {
 
   if (error || !item) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Car className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-medium mb-2">Product not found</h3>
-          <p className="text-muted-foreground mb-4">
-            The product you're looking for doesn't exist.
-          </p>
-          <Link to="/products">
-            <Button>Back to Products</Button>
-          </Link>
+      <div className="min-h-screen bg-background">
+        <UniversalHeader />
+        <div className="flex items-center justify-center p-8">
+          <div className="text-center">
+            <Car className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-medium mb-2">Product not found</h3>
+            <p className="text-muted-foreground mb-4">
+              The product you're looking for doesn't exist.
+            </p>
+            <Link to="/products">
+              <Button>Back to Products</Button>
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -64,26 +71,7 @@ const ProductDetails = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center space-x-2">
-              <Car className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold text-primary">SecureMotor</h1>
-            </Link>
-            
-            <div className="flex items-center space-x-4">
-              <Link to="/cart">
-                <Button variant="outline">
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                  Cart
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      <UniversalHeader />
 
       <main className="container mx-auto px-4 py-8">
         <Link to="/products" className="inline-flex items-center text-primary hover:underline mb-6">

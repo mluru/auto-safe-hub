@@ -1,20 +1,16 @@
 
-import { Button } from '@/components/ui/button';
-import { Car, LogOut, User, Shield } from 'lucide-react';
+import { Car } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import UserNavDropdown from './UserNavDropdown';
 
 export const Navbar = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { data: role } = useUserRole();
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
-
-  const handleSignOut = async () => {
-    await signOut();
-  };
 
   if (!user) return null;
 
@@ -29,9 +25,9 @@ export const Navbar = () => {
           
           <nav className="hidden md:flex items-center space-x-6">
             <Link
-              to="/"
+              to="/dashboard"
               className={`text-sm font-medium transition-colors hover:text-primary ${
-                isActive('/') ? 'text-primary' : 'text-muted-foreground'
+                isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
               Dashboard
@@ -63,30 +59,17 @@ export const Navbar = () => {
             {role === 'admin' && (
               <Link
                 to="/admin"
-                className={`text-sm font-medium transition-colors hover:text-primary flex items-center gap-1 ${
+                className={`text-sm font-medium transition-colors hover:text-primary ${
                   isActive('/admin') ? 'text-primary' : 'text-muted-foreground'
                 }`}
               >
-                <Shield className="h-4 w-4" />
                 Admin
               </Link>
             )}
           </nav>
 
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-sm">
-              <User className="h-4 w-4" />
-              <span>{user.email}</span>
-              {role === 'admin' && (
-                <span className="bg-primary text-primary-foreground px-2 py-1 text-xs rounded">
-                  Admin
-                </span>
-              )}
-            </div>
-            <Button variant="outline" size="sm" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
+          <div className="flex items-center">
+            <UserNavDropdown />
           </div>
         </div>
       </div>

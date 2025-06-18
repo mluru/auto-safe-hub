@@ -1,27 +1,26 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -32,9 +31,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Search, Eye, Trash2, Check, X, Clock } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { Search, Filter, Eye, CheckCircle, XCircle, Trash2, FileText } from 'lucide-react';
 
 interface PolicyWithUser {
   id: string;
@@ -52,9 +50,7 @@ interface PolicyWithUser {
   owner_email: string;
   owner_phone: string;
   user_id: string;
-  profiles?: {
-    full_name: string;
-  } | null;
+  customer_name?: string;
 }
 
 const PolicyManagementSection = () => {
@@ -63,11 +59,12 @@ const PolicyManagementSection = () => {
   const [selectedPolicy, setSelectedPolicy] = useState<PolicyWithUser | null>(null);
   const queryClient = useQueryClient();
 
-  // Fetch policies with user information
-  const { data: policies, isLoading, error } = useQuery({
+  // Fetch all policies with user information
+  const { data: policies = [], isLoading, error } = useQuery({
     queryKey: ['admin-policies'],
     queryFn: async () => {
       console.log('Fetching policies for admin...');
+      
       const { data, error } = await supabase
         .from('policies')
         .select(`
@@ -85,10 +82,7 @@ const PolicyManagementSection = () => {
           owner_name,
           owner_email,
           owner_phone,
-          user_id,
-          profiles!inner (
-            full_name
-          )
+          user_id
         `)
         .order('created_at', { ascending: false });
 
@@ -97,8 +91,14 @@ const PolicyManagementSection = () => {
         throw error;
       }
 
-      console.log('Fetched policies:', data);
-      return data as PolicyWithUser[];
+      // Transform the data to include customer name from owner_name
+      const transformedData: PolicyWithUser[] = (data || []).map(policy => ({
+        ...policy,
+        customer_name: policy.owner_name
+      }));
+
+      console.log('Fetched policies:', transformedData);
+      return transformedData;
     },
   });
 
@@ -112,19 +112,14 @@ const PolicyManagementSection = () => {
         .update({ status: newStatus })
         .eq('id', policyId);
 
-      if (error) {
-        console.error('Error updating policy status:', error);
-        throw error;
-      }
-
-      return { policyId, newStatus };
+      if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Policy status updated successfully');
       queryClient.invalidateQueries({ queryKey: ['admin-policies'] });
+      toast.success('Policy status updated successfully');
     },
     onError: (error) => {
-      console.error('Failed to update policy status:', error);
+      console.error('Error updating policy status:', error);
       toast.error('Failed to update policy status');
     },
   });
@@ -139,62 +134,71 @@ const PolicyManagementSection = () => {
         .delete()
         .eq('id', policyId);
 
-      if (error) {
-        console.error('Error deleting policy:', error);
-        throw error;
-      }
-
-      return policyId;
+      if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Policy deleted successfully');
       queryClient.invalidateQueries({ queryKey: ['admin-policies'] });
+      toast.success('Policy deleted successfully');
     },
     onError: (error) => {
-      console.error('Failed to delete policy:', error);
+      console.error('Error deleting policy:', error);
       toast.error('Failed to delete policy');
     },
   });
 
-  const filteredPolicies = policies?.filter(policy => {
-    const matchesSearch = 
-      policy.policy_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      policy.owner_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      policy.vehicle_make?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      policy.vehicle_model?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || policy.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  }) || [];
+  const handleStatusUpdate = (policyId: string, newStatus: string) => {
+    updatePolicyStatusMutation.mutate({ policyId, newStatus });
+  };
 
-  const getStatusBadgeColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
+  const handleDeletePolicy = (policyId: string) => {
+    deletePolicyMutation.mutate(policyId);
+  };
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status.toLowerCase()) {
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'to be approved':
-        return 'bg-blue-100 text-blue-800';
+        return 'secondary';
+      case 'active':
+      case 'approved':
+        return 'default';
       case 'rejected':
-        return 'bg-red-100 text-red-800';
+        return 'destructive';
       case 'expired':
-        return 'bg-gray-100 text-gray-800';
+        return 'outline';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'secondary';
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
+  const getStatusCounts = () => {
+    const counts = {
+      total: policies.length,
+      pending: policies.filter(p => p.status.toLowerCase() === 'pending').length,
+      active: policies.filter(p => p.status.toLowerCase() === 'active').length,
+      rejected: policies.filter(p => p.status.toLowerCase() === 'rejected').length,
+      expired: policies.filter(p => p.status.toLowerCase() === 'expired').length,
+    };
+    return counts;
   };
+
+  // Filter policies based on search and status
+  const filteredPolicies = policies.filter(policy => {
+    const matchesSearch = 
+      policy.policy_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      policy.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      policy.owner_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      policy.policy_type.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || policy.status.toLowerCase() === statusFilter.toLowerCase();
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  const statusCounts = getStatusCounts();
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-8">
+      <div className="flex items-center justify-center p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
@@ -202,216 +206,204 @@ const PolicyManagementSection = () => {
 
   if (error) {
     return (
-      <div className="text-center py-8">
+      <div className="text-center p-8">
         <p className="text-red-600">Error loading policies: {error.message}</p>
       </div>
     );
   }
 
-  const statusCounts = policies?.reduce((acc, policy) => {
-    const status = policy.status || 'unknown';
-    acc[status] = (acc[status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>) || {};
-
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Policy Management</h2>
-        <div className="flex items-center gap-4">
+      {/* Status Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Policies</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{statusCounts.total}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">{statusCounts.pending}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Active</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{statusCounts.active}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Rejected</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{statusCounts.rejected}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Expired</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-600">{statusCounts.expired}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search and Filter Controls */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by policy number, customer name, or type..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" />
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="to be approved">To Be Approved</SelectItem>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="rejected">Rejected</SelectItem>
               <SelectItem value="expired">Expired</SelectItem>
             </SelectContent>
           </Select>
-          
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search policies..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-64"
-            />
-          </div>
         </div>
       </div>
 
-      {/* Status Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        {Object.entries(statusCounts).map(([status, count]) => (
-          <Card key={status}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 capitalize">
-                    {status.replace('_', ' ')}
-                  </p>
-                  <p className="text-2xl font-bold">{count}</p>
-                </div>
-                <Badge className={getStatusBadgeColor(status)}>
-                  {status}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
+      {/* Policies Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Policies ({filteredPolicies.length})</CardTitle>
+          <CardTitle>Policy Management ({filteredPolicies.length} policies)</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Policy Number</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Vehicle</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Premium</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date Requested</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredPolicies.map((policy) => (
-                <TableRow key={policy.id}>
-                  <TableCell className="font-medium">
-                    {policy.policy_number || 'N/A'}
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">
-                        {policy.owner_name || policy.profiles?.full_name || 'N/A'}
-                      </p>
-                      <p className="text-sm text-gray-600">{policy.owner_email}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">
-                        {policy.vehicle_make} {policy.vehicle_model}
-                      </p>
-                      <p className="text-sm text-gray-600">{policy.vehicle_reg_number}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>{policy.policy_type || 'N/A'}</TableCell>
-                  <TableCell>{formatCurrency(policy.premium)}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusBadgeColor(policy.status || 'pending')}>
-                      {policy.status || 'Pending'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {format(new Date(policy.created_at), 'MMM dd, yyyy')}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedPolicy(policy)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      
-                      {policy.status === 'pending' && (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-green-600"
-                            onClick={() => 
-                              updatePolicyStatusMutation.mutate({ 
-                                policyId: policy.id, 
-                                newStatus: 'active' 
-                              })
-                            }
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600"
-                            onClick={() => 
-                              updatePolicyStatusMutation.mutate({ 
-                                policyId: policy.id, 
-                                newStatus: 'rejected' 
-                              })
-                            }
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-
-                      <Select
-                        value={policy.status || 'pending'}
-                        onValueChange={(newStatus) => 
-                          updatePolicyStatusMutation.mutate({ 
-                            policyId: policy.id, 
-                            newStatus 
-                          })
-                        }
-                      >
-                        <SelectTrigger className="w-8 h-8 p-0">
-                          <Clock className="h-4 w-4" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="to be approved">To Be Approved</SelectItem>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="rejected">Rejected</SelectItem>
-                          <SelectItem value="expired">Expired</SelectItem>
-                        </SelectContent>
-                      </Select>
-
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="outline" size="sm" className="text-red-600">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Policy</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete policy {policy.policy_number}? This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => deletePolicyMutation.mutate(policy.id)}
-                              className="bg-red-600 hover:bg-red-700"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Policy Number</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Vehicle</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Premium</TableHead>
+                  <TableHead>Start Date</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
+              </TableHeader>
+              <TableBody>
+                {filteredPolicies.map((policy) => (
+                  <TableRow key={policy.id}>
+                    <TableCell className="font-medium">{policy.policy_number}</TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{policy.customer_name}</div>
+                        <div className="text-sm text-muted-foreground">{policy.owner_email}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{policy.policy_type}</TableCell>
+                    <TableCell>
+                      {policy.vehicle_make} {policy.vehicle_model}
+                      <div className="text-sm text-muted-foreground">{policy.vehicle_reg_number}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusBadgeVariant(policy.status)}>
+                        {policy.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>${policy.premium.toLocaleString()}</TableCell>
+                    <TableCell>{new Date(policy.start_date).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedPolicy(policy)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        
+                        {policy.status.toLowerCase() === 'pending' && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleStatusUpdate(policy.id, 'active')}
+                              className="text-green-600 hover:text-green-700"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleStatusUpdate(policy.id, 'rejected')}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                        
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Policy</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete policy {policy.policy_number}? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeletePolicy(policy.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          
           {filteredPolicies.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              No policies found
+            <div className="text-center py-8">
+              <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No policies found</h3>
+              <p className="text-muted-foreground">
+                {searchTerm || statusFilter !== 'all' 
+                  ? 'Try adjusting your search or filter criteria.'
+                  : 'No policies have been submitted yet.'
+                }
+              </p>
             </div>
           )}
         </CardContent>
@@ -419,83 +411,36 @@ const PolicyManagementSection = () => {
 
       {/* Policy Details Modal */}
       {selectedPolicy && (
-        <Card className="fixed inset-0 z-50 m-8 max-w-4xl mx-auto bg-white shadow-xl overflow-y-auto">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Policy Details - {selectedPolicy.policy_number}</CardTitle>
-              <Button variant="outline" onClick={() => setSelectedPolicy(null)}>
-                Close
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Customer Information</h3>
-                <div className="space-y-2">
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Name</label>
-                    <p className="font-medium">
-                      {selectedPolicy.owner_name || selectedPolicy.profiles?.full_name || 'N/A'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Email</label>
-                    <p className="font-medium">{selectedPolicy.owner_email || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Phone</label>
-                    <p className="font-medium">{selectedPolicy.owner_phone || 'N/A'}</p>
-                  </div>
-                </div>
+        <AlertDialog open={!!selectedPolicy} onOpenChange={() => setSelectedPolicy(null)}>
+          <AlertDialogContent className="max-w-2xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Policy Details - {selectedPolicy.policy_number}</AlertDialogTitle>
+            </AlertDialogHeader>
+            <div className="grid grid-cols-2 gap-4 py-4">
+              <div>
+                <h4 className="font-semibold mb-2">Customer Information</h4>
+                <p><strong>Name:</strong> {selectedPolicy.customer_name}</p>
+                <p><strong>Email:</strong> {selectedPolicy.owner_email}</p>
+                <p><strong>Phone:</strong> {selectedPolicy.owner_phone}</p>
               </div>
-
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Vehicle Information</h3>
-                <div className="space-y-2">
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Make & Model</label>
-                    <p className="font-medium">
-                      {selectedPolicy.vehicle_make} {selectedPolicy.vehicle_model}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Registration Number</label>
-                    <p className="font-medium">{selectedPolicy.vehicle_reg_number}</p>
-                  </div>
-                </div>
+              <div>
+                <h4 className="font-semibold mb-2">Policy Information</h4>
+                <p><strong>Type:</strong> {selectedPolicy.policy_type}</p>
+                <p><strong>Premium:</strong> ${selectedPolicy.premium.toLocaleString()}</p>
+                <p><strong>Start Date:</strong> {new Date(selectedPolicy.start_date).toLocaleDateString()}</p>
+                <p><strong>End Date:</strong> {new Date(selectedPolicy.expiry_date).toLocaleDateString()}</p>
               </div>
-
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Policy Information</h3>
-                <div className="space-y-2">
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Policy Type</label>
-                    <p className="font-medium">{selectedPolicy.policy_type || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Premium</label>
-                    <p className="font-medium">{formatCurrency(selectedPolicy.premium)}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Period</label>
-                    <p className="font-medium">
-                      {format(new Date(selectedPolicy.start_date), 'PPP')} - {format(new Date(selectedPolicy.expiry_date), 'PPP')}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Status</label>
-                    <div>
-                      <Badge className={getStatusBadgeColor(selectedPolicy.status || 'pending')}>
-                        {selectedPolicy.status || 'Pending'}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
+              <div className="col-span-2">
+                <h4 className="font-semibold mb-2">Vehicle Information</h4>
+                <p><strong>Make & Model:</strong> {selectedPolicy.vehicle_make} {selectedPolicy.vehicle_model}</p>
+                <p><strong>Registration:</strong> {selectedPolicy.vehicle_reg_number}</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Close</AlertDialogCancel>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </div>
   );
