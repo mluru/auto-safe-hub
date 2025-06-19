@@ -103,7 +103,7 @@ const Dashboard = () => {
 
         <div className="absolute bottom-4 left-4 right-4 rounded-sm">
           <Separator className="mb-4" />
-          {sidebarOpen && user && <div className="mb-3 p-2 bg-gray-50 px-0 py-0 rounded-sm">
+          {sidebarOpen && user && <div className="mb-3 p-2 bg-gray-10 px-0 py-0 rounded">
               <p className="text-sm font-medium">{user.email}</p>
               {isAdmin && <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded mt-1 inline-block">
                   Administrator
