@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -11,49 +12,58 @@ import MyClaimsSection from '@/components/MyClaimsSection';
 import PaymentSection from '@/components/PaymentSection';
 import UserManagementSection from '@/components/admin/UserManagementSection';
 import PolicyManagementSection from '@/components/admin/PolicyManagementSection';
+
 const Dashboard = () => {
-  const {
-    user,
-    signOut
-  } = useAuth();
-  const {
-    data: userRole
-  } = useUserRole();
+  const { user, signOut } = useAuth();
+  const { data: userRole } = useUserRole();
   const [activeSection, setActiveSection] = useState('request-policy');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
   const isAdmin = userRole === 'admin';
-  const menuItems = [{
-    id: 'dashboard',
-    label: 'Dashboard',
-    icon: LayoutDashboard,
-    disabled: true
-  }, {
-    id: 'request-policy',
-    label: 'Request New Policy',
-    icon: FileText
-  }, {
-    id: 'my-policies',
-    label: 'My Policies',
-    icon: BookOpen
-  }, {
-    id: 'my-claims',
-    label: 'My Claims',
-    icon: ClipboardList
-  }, {
-    id: 'payments',
-    label: 'Payment Options',
-    icon: CreditCard
-  }, ...(isAdmin ? [{
-    id: 'user-management',
-    label: 'User Management',
-    icon: Users,
-    adminOnly: true
-  }, {
-    id: 'policy-management',
-    label: 'Policy Management',
-    icon: FolderOpen,
-    adminOnly: true
-  }] : [])];
+
+  const menuItems = [
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: LayoutDashboard,
+      disabled: true
+    },
+    {
+      id: 'request-policy',
+      label: 'Request New Policy',
+      icon: FileText
+    },
+    {
+      id: 'my-policies',
+      label: 'My Policies',
+      icon: BookOpen
+    },
+    {
+      id: 'my-claims',
+      label: 'My Claims',
+      icon: ClipboardList
+    },
+    {
+      id: 'payments',
+      label: 'Payment Options',
+      icon: CreditCard
+    },
+    ...(isAdmin ? [
+      {
+        id: 'user-management',
+        label: 'User Management',
+        icon: Users,
+        adminOnly: true
+      },
+      {
+        id: 'policy-management',
+        label: 'Policy Management',
+        icon: FolderOpen,
+        adminOnly: true
+      }
+    ] : [])
+  ];
+
   const renderActiveSection = () => {
     switch (activeSection) {
       case 'request-policy':
@@ -72,10 +82,13 @@ const Dashboard = () => {
         return <PolicyRequestForm />;
     }
   };
+
   const handleLogout = async () => {
     await signOut();
   };
-  return <div className="flex h-screen bg-gray-50">
+
+  return (
+    <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <div className={`bg-white shadow-lg transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}>
         <div className="p-4">
@@ -90,35 +103,55 @@ const Dashboard = () => {
         <Separator />
 
         <nav className="p-4 space-y-2">
-          {menuItems.map(item => <Button key={item.id} variant={activeSection === item.id ? "default" : "ghost"} className={`w-full justify-start ${!sidebarOpen && 'px-2'}`} onClick={() => !item.disabled && setActiveSection(item.id)} disabled={item.disabled}>
+          {menuItems.map(item => (
+            <Button
+              key={item.id}
+              variant={activeSection === item.id ? "default" : "ghost"}
+              className={`w-full justify-start ${!sidebarOpen && 'px-2'}`}
+              onClick={() => !item.disabled && setActiveSection(item.id)}
+              disabled={item.disabled}
+            >
               <item.icon className={`h-4 w-4 ${sidebarOpen && 'mr-3'}`} />
-              {sidebarOpen && <span className="flex items-center gap-2">
+              {sidebarOpen && (
+                <span className="flex items-center gap-2">
                   {item.label}
-                  {item.adminOnly && <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">
+                  {item.adminOnly && (
+                    <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">
                       Admin
-                    </span>}
-                </span>}
-            </Button>)}
+                    </span>
+                  )}
+                </span>
+              )}
+            </Button>
+          ))}
         </nav>
-
-        <div className="absolute bottom-4 left-4 right-4 rounded-sm">
-          <Separator className="mb-4" />
-          {sidebarOpen && user && <div className="mb-3 p-2 bg-gray-10 px-0 py-0 rounded">
-              <p className="text-sm font-medium">{user.email}</p>
-              {isAdmin && <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded mt-1 inline-block">
-                  Administrator
-                </span>}
-            </div>}
-          <Button variant="outline" onClick={handleLogout} className="">
-            <LogOut className={`h-4 w-4 ${sidebarOpen && 'mr-3'}`} />
-            {sidebarOpen && 'Logout'}
-          </Button>
-        </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
-        <div className="p-6">
+        {/* Top Right User Info */}
+        <div className="flex justify-end p-4">
+          <div className="flex items-center gap-4">
+            {user && (
+              <div className="flex items-center gap-3 p-2 bg-white rounded-lg shadow-sm border">
+                <div className="text-right">
+                  <p className="text-sm font-medium">{user.email}</p>
+                  {isAdmin && (
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                      Administrator
+                    </span>
+                  )}
+                </div>
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="px-6 pb-6">
           <Card>
             <CardHeader>
               <CardTitle>
@@ -131,6 +164,8 @@ const Dashboard = () => {
           </Card>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default Dashboard;
