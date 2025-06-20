@@ -82,11 +82,15 @@ const PolicyRequestForm = () => {
   };
 
   const onSubmit = async (data: PolicyRequestForm) => {
+    console.log('🔥 Submit handler triggered');
+    console.log('🔎 Form data received:', data);
+    console.log('🔎 Files uploaded:', files);
+    console.log('🔎 Current user session:', user);
+    console.log('🔎 User ID from session:', user?.id);
+    
     try {
-      console.log('Submitting policy request data:', data);
-      console.log('Files:', files);
-      
       if (!user) {
+        console.error('❌ No user found in session');
         toast.error('You must be logged in to submit a policy request');
         return;
       }
@@ -116,11 +120,15 @@ const PolicyRequestForm = () => {
         status: 'pending'
       };
 
-      console.log('Mapped policy data for Supabase:', policyData);
+      console.log('🔎 Final policyData object being inserted:', policyData);
+      console.log('🔎 About to call createPolicy.mutateAsync...');
 
-      await createPolicy.mutateAsync(policyData);
+      const result = await createPolicy.mutateAsync(policyData);
       
-      toast.success('Policy request submitted successfully!');
+      console.log('✅ Policy creation successful!');
+      console.log('🔎 Supabase insert result:', result);
+      
+      toast.success('Policy request submitted successfully! You will be notified once it is reviewed.');
       
       // Reset form
       reset();
@@ -134,8 +142,12 @@ const PolicyRequestForm = () => {
       });
       
     } catch (error) {
-      console.error('Error submitting policy request:', error);
-      toast.error('Failed to submit policy request. Please try again.');
+      console.error('❌ Policy creation failed with error:', error);
+      console.error('❌ Error details:', JSON.stringify(error, null, 2));
+      
+      // Show specific error message if available
+      const errorMessage = error?.message || 'Failed to submit policy request. Please try again.';
+      toast.error(`Error: ${errorMessage}`);
     }
   };
 
