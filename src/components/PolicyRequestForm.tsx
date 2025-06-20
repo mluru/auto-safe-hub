@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCreatePolicy } from '@/hooks/usePolicies';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -50,6 +51,7 @@ type PolicyRequestForm = z.infer<typeof policyRequestSchema>;
 
 const PolicyRequestForm = () => {
   const { user } = useAuth();
+  const createPolicy = useCreatePolicy();
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [files, setFiles] = useState<{ [key: string]: File | null }>({
@@ -63,6 +65,7 @@ const PolicyRequestForm = () => {
     register,
     handleSubmit,
     setValue,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<PolicyRequestForm>({
     resolver: zodResolver(policyRequestSchema),
@@ -80,15 +83,59 @@ const PolicyRequestForm = () => {
 
   const onSubmit = async (data: PolicyRequestForm) => {
     try {
-      console.log('Policy request data:', data);
+      console.log('Submitting policy request data:', data);
       console.log('Files:', files);
       
-      // Here you would typically upload files and submit to Supabase
-      // For now, we'll just show a success message
+      if (!user) {
+        toast.error('You must be logged in to submit a policy request');
+        return;
+      }
+
+      // Map form data to database format
+      const policyData = {
+        vehicle_make: data.vehicleMake,
+        vehicle_model: data.vehicleModel,
+        vehicle_year: data.vehicleYear,
+        vehicle_reg_number: data.vehicleRegNumber,
+        engine_number: data.engineNumber,
+        chassis_number: data.chassisNumber,
+        engine_model: data.engineModel || null,
+        seating_capacity: data.seatingCapacity,
+        tonnage: data.tonnage || null,
+        energy_type: data.energyType,
+        vehicle_category: data.vehicleCategory,
+        risk_location: data.riskLocation,
+        policy_type: data.policyType,
+        start_date: format(data.startDate, 'yyyy-MM-dd'),
+        expiry_date: format(data.endDate, 'yyyy-MM-dd'),
+        premium: data.premium,
+        owner_name: data.fullName,
+        owner_email: data.email,
+        owner_phone: data.phone,
+        owner_address: data.address,
+        status: 'pending'
+      };
+
+      console.log('Mapped policy data for Supabase:', policyData);
+
+      await createPolicy.mutateAsync(policyData);
+      
       toast.success('Policy request submitted successfully!');
+      
+      // Reset form
+      reset();
+      setStartDate(undefined);
+      setEndDate(undefined);
+      setFiles({
+        nationalId: null,
+        driversLicense: null,
+        vehicleRegistration: null,
+        additionalDocs: null,
+      });
+      
     } catch (error) {
       console.error('Error submitting policy request:', error);
-      toast.error('Failed to submit policy request');
+      toast.error('Failed to submit policy request. Please try again.');
     }
   };
 
@@ -456,8 +503,12 @@ const PolicyRequestForm = () => {
       </Card>
 
       <div className="flex justify-end">
-        <Button type="submit" disabled={isSubmitting} size="lg">
-          {isSubmitting ? 'Submitting...' : 'Submit Policy Request'}
+        <Button 
+          type="submit" 
+          disabled={isSubmitting || createPolicy.isPending} 
+          size="lg"
+        >
+          {isSubmitting || createPolicy.isPending ? 'Submitting...' : 'Submit Policy Request'}
         </Button>
       </div>
     </form>
